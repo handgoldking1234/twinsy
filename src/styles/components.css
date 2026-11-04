@@ -679,3 +679,93 @@
 .lvl--restricted { color: var(--color-point-primary); font-weight: var(--font-weight-bold); }
 
 :focus-visible { outline: 2px solid var(--color-brown600); outline-offset: 2px; }
+
+/* ---------- 소울 배지 말풍선 (Popovers_Soul) ---------- */
+.soul-pop { position: relative; display: inline-flex; }
+.soul-pop__btn { display: inline-flex; }
+.soul-pop__bubble {
+  position: absolute; top: 24px; left: -12px; z-index: 6;
+  width: 240px; padding: var(--spacing-sm) var(--spacing-md);
+  display: flex; flex-direction: column; gap: var(--spacing-xs);
+  background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-layer);
+}
+.soul-pop__bubble::before {
+  content: ''; position: absolute; top: -6px; left: 18px; width: 12px; height: 12px;
+  background: var(--color-white); transform: rotate(45deg); box-shadow: -2px -2px 3px rgba(0, 0, 0, 0.04);
+}
+.soul-pop__row { display: flex; flex-direction: column; gap: 4px; }
+.soul-pop__topic { font-size: 11px; font-weight: var(--font-weight-bold); line-height: 1; color: var(--color-brown600); }
+.soul-pop__chips { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 12px; line-height: 1.4; color: var(--color-black800); }
+
+/* ---------- 로딩 ---------- */
+.dim--light { background: rgba(0, 0, 0, 0.2); }
+.loading {
+  display: inline-flex; align-items: center; gap: var(--spacing-xs);
+  padding: 15px var(--spacing-lg); border-radius: var(--radius-full);
+  background: var(--color-bg-toast); color: var(--color-white);
+  font-size: 16px; font-weight: var(--font-weight-medium); line-height: 1;
+}
+.loading__spin { width: 14px; height: 14px; border-radius: var(--radius-full); border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: var(--color-white); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loading__spin { animation: none; } }
+
+.sheet__sub--wrap { line-height: var(--font-lineheight-140); }
+
+/* ---------- 로그인 ---------- */
+.auth { display: flex; flex-direction: column; gap: var(--spacing-md); padding: var(--spacing-lg) var(--gutter-content) var(--spacing-xl); }
+.auth__logo { align-self: flex-start; font-size: 40px; font-weight: var(--font-weight-bold); line-height: 1; color: var(--color-brand-primary); }
+.auth__title { font-size: 22px; font-weight: var(--font-weight-bold); line-height: var(--font-lineheight-130); margin-bottom: var(--spacing-xs); }
+.auth__info { font-size: 13px; line-height: 1.3; color: var(--color-brand-expert); }
+.auth__error { font-size: 13px; line-height: 1.3; color: var(--color-point-primary); }
+.auth__help { align-self: center; color: var(--color-text-gray800); text-decoration: underline; }
+.auth__mode { font-size: 12px; line-height: var(--font-lineheight-140); color: var(--color-text-secondary); text-align: center; }
+.accent { color: var(--color-brand-secondary); }
+.caution-list { display: flex; flex-direction: column; gap: var(--spacing-sm); padding-left: var(--spacing-xxs); }
+.caution-list li { position: relative; padding-left: 11px; font-size: 15px; line-height: var(--font-lineheight-140); color: var(--color-black300); }
+.caution-list li::before { content: '-'; position: absolute; left: 0; }
+.link-text { text-decoration: underline; font-size: 14px; }
+
+/* ---------- 챌린지 · 리워드 ---------- */
+.points { display: flex; align-items: center; justify-content: space-between; margin: var(--spacing-md) var(--gutter-list) 0; padding: var(--spacing-md); border-radius: var(--radius-lg); background: var(--color-bg-gray200); }
+.points__label { font-size: 12px; line-height: 1; color: var(--color-text-gray800); }
+.points__value { margin-top: 6px; font-size: 24px; font-weight: var(--font-weight-bold); line-height: 1; color: var(--color-brown600); font-variant-numeric: tabular-nums; }
+.challenge-list { display: flex; flex-direction: column; gap: var(--spacing-lg); padding: var(--spacing-lg) var(--gutter-list); }
+.challenge { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.challenge__image { border-radius: var(--radius-md); }
+.challenge__ends { position: absolute; top: var(--spacing-xs); left: var(--spacing-xs); z-index: 1; padding: 4px var(--spacing-xs); border-radius: var(--radius-full); background: var(--color-bg-toast); color: var(--color-white); font-size: 11px; font-weight: var(--font-weight-bold); line-height: 1; }
+.challenge__body { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.challenge__title { font-size: 16px; font-weight: var(--font-weight-bold); line-height: 1.2; }
+.challenge__desc { font-size: 13px; line-height: var(--font-lineheight-140); color: var(--color-black300); }
+.challenge__foot { display: flex; align-items: center; justify-content: space-between; }
+.challenge__reward { font-size: 14px; font-weight: var(--font-weight-bold); color: var(--color-brown600); }
+.challenge__progress { font-size: 13px; font-weight: var(--font-weight-medium); color: var(--color-text-gray800); }
+.meter { height: 6px; border-radius: var(--radius-full); background: var(--color-bg-gray300); overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--color-brown600); }
+.pad { padding: 0 var(--gutter-list) var(--spacing-xl); }
+
+/* ---------- Live 투표 ---------- */
+.live { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg) var(--gutter-list); }
+.live__badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: var(--font-weight-bold); line-height: 1; color: var(--color-point-primary); font-variant-numeric: tabular-nums; }
+.live__dot { width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--color-point-primary); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .live__dot { animation: none; } }
+.live__q { font-size: 20px; font-weight: var(--font-weight-bold); line-height: var(--font-lineheight-130); }
+.live__count { font-size: 13px; line-height: 1; color: var(--color-text-gray800); font-variant-numeric: tabular-nums; }
+.live__note { display: flex; gap: 4px; align-items: center; font-size: 12px; line-height: 1.3; color: var(--color-text-secondary); }
+.vote__options--flush { padding: var(--spacing-xs) 0 0; }
+.vote-opt__bar { transition: width .4s ease; }
+.live-banner {
+  width: calc(100% - 2 * var(--gutter-list)); margin: var(--spacing-md) var(--gutter-list) 0;
+  display: flex; align-items: center; gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-gray300); text-align: left;
+}
+.live-banner__text { flex: 1; min-width: 0; font-size: 14px; font-weight: var(--font-weight-semibold); line-height: 1.3; }
+
+/* ---------- 리워드 광고 카드 ---------- */
+.ad-card { position: relative; display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-md) var(--gutter-list); border-bottom: 8px solid var(--color-bg-gray300); }
+.ad-card__label { align-self: flex-start; padding: 3px 6px; border-radius: var(--radius-sm); border: 1px solid var(--color-border-gray600); font-size: 10px; font-weight: var(--font-weight-semibold); line-height: 1; color: var(--color-text-gray800); }
+.ad-card__title { font-size: 15px; font-weight: var(--font-weight-bold); line-height: 1.2; }
+.ad-card__desc { margin-top: 4px; font-size: 13px; line-height: 1.3; color: var(--color-text-gray800); }
+.ad-card .btn { align-self: flex-start; }
+.preview__source { font-size: 11px; line-height: 1.3; color: var(--color-text-secondary); margin-top: calc(-1 * var(--spacing-xs)); }

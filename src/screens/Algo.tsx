@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { SubHeader } from '../components/ui';
-import { risingKeywords, similarity, TRUST_MESSAGE } from '../algorithm';
+import { engagementRate, exposureStage, minExposure, risingKeywords, sampleSize, similarity, statsFromMetrics, TRUST_MESSAGE } from '../algorithm';
 import { useStore } from '../data/store';
-import { NOW, SEARCH_LOGS } from '../data/world';
+import { DAU, NOW, SEARCH_LOGS } from '../data/world';
 import type { Nav } from '../App';
 
 const LEVEL = { ok: '정상', notice: '경고 문구', warning: '경고 알림', restricted: '노출 제한' } as const;
@@ -54,9 +54,35 @@ export function AlgoScreen({ nav }: { nav: Nav }) {
                     return (
                       <tr key={u.id} title={TRUST_MESSAGE[t.level] ?? ''}>
                         <td>{u.name}</td>
-                        <td>{t.total}</td>
+                        <td>{t.total}{t.restrictedUntil ? ` (~${new Date(t.restrictedUntil).toLocaleDateString('ko-KR')})` : ''}</td>
                         <td className={`lvl lvl--${t.level}`}>{LEVEL[t.level]}</td>
                         <td>{Object.entries(t.byTopic).map(([k, v]) => `${k} ${v}`).join(', ') || '–'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="algo__title">노출 단계 (DAU {DAU.toLocaleString()}명 기준)</h2>
+            <p className="algo__note">
+              최소 노출 {minExposure(DAU, 0).toLocaleString()}회(DAU 7%) · 샘플 그룹 {sampleSize(DAU)}명 · 반응률 5% 이상이면 전체 회원으로 확장. DAU 1,000명 미만이면 유사취향자 전원 노출.
+            </p>
+            <div className="table-wrap">
+              <table className="algo-table">
+                <thead><tr><th>게시물</th><th>노출</th><th>반응률</th><th>단계</th></tr></thead>
+                <tbody>
+                  {s.posts.slice(0, 24).map((p) => {
+                    const st = statsFromMetrics(p);
+                    const stage = exposureStage(st, DAU);
+                    return (
+                      <tr key={p.id}>
+                        <td>{p.title.slice(0, 16)}</td>
+                        <td>{st.impressions.toLocaleString()}</td>
+                        <td>{(engagementRate(st) * 100).toFixed(1)}%</td>
+                        <td className={stage === 'all' ? 'is-peer' : ''}>{stage === 'all' ? '전체 확장' : stage === 'peers' ? '유사취향자만' : '샘플 테스트'}</td>
                       </tr>
                     );
                   })}

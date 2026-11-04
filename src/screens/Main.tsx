@@ -5,9 +5,11 @@ import { Dialog, PostOptionsSheet, ReportSheet } from '../components/overlays';
 import { BottomNav, BottomSheet, Button, MainHeader, Tabs, Toast } from '../components/ui';
 import { followingFeed, isColdStart, recommendFeed, TRUST_MESSAGE, type FeedSort } from '../algorithm';
 import { useStore } from '../data/store';
-import { NOW, type AppUser } from '../data/world';
+import { DAU, NOW, type AppUser } from '../data/world';
 import { TOPICS } from '../data/mock';
 import type { Nav } from '../App';
+import { Fragment } from 'react';
+import { RewardAdCard } from './Extra';
 
 type Tab = 'pick' | 'recommend';
 const TAB_ITEMS: { id: Tab; label: string }[] = [
@@ -33,7 +35,7 @@ export function MainScreen({ nav, tab, sheetOpen = false, forceEmpty = false }: 
   const [blockFor, setBlockFor] = useState<AppUser | null>(null);
   const [unpickFor, setUnpickFor] = useState<AppUser | null>(null);
   const [reportFor, setReportFor] = useState<AppUser | null>(null);
-  const [blocked, setBlocked] = useState<string[]>([]);
+  const [blockedDone, setBlockedDone] = useState<AppUser | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const flash = (m: string) => {
@@ -51,9 +53,10 @@ export function MainScreen({ nav, tab, sheetOpen = false, forceEmpty = false }: 
             sort,
             now: NOW,
             trusts: s.trusts,
+            exposure: { dau: DAU },
           });
-    return ranked.filter((r) => !blocked.includes(r.post.authorId)).map((r) => s.view(s.posts.find((p) => p.id === r.post.id)!, r));
-  }, [tab, scope, sort, s, blocked, forceEmpty]);
+    return ranked.filter((r) => !s.blocked.includes(r.post.authorId)).map((r) => s.view(s.posts.find((p) => p.id === r.post.id)!, r));
+  }, [tab, scope, sort, s, forceEmpty]);
 
   const setTab = (t: Tab) => nav(t === 'pick' ? 'main-pick' : 'main-recommend');
   const myTrust = s.trusts.get(s.me.id);
@@ -132,14 +135,16 @@ export function MainScreen({ nav, tab, sheetOpen = false, forceEmpty = false }: 
           </div>
         ) : (
           <div className="feed">
-            {feed.map((v) => (
-              <PostCard
-                key={v.post.id}
-                v={v}
-                onMore={() => setOptionsFor(v.author)}
-                onOpen={() => nav('post-detail', v.post.id)}
-                onTag={(t) => nav('search', t)}
-              />
+            {feed.map((v, i) => (
+              <Fragment key={v.post.id}>
+                <PostCard
+                  v={v}
+                  onMore={() => setOptionsFor(v.author)}
+                  onOpen={() => nav('post-detail', v.post.id)}
+                  onTag={(t) => nav('search', t)}
+                />
+                {tab === 'recommend' && i % 6 === 5 && <RewardAdCard />}
+              </Fragment>
             ))}
           </div>
         )}
@@ -212,8 +217,8 @@ export function MainScreen({ nav, tab, sheetOpen = false, forceEmpty = false }: 
         confirm="차단"
         onCancel={() => setBlockFor(null)}
         onConfirm={() => {
-          setBlocked((b) => [...b, blockFor!.id]);
-          flash(`${blockFor!.name} 님을 차단했어요`);
+          s.block(blockFor!.id);
+          setBlockedDone(blockFor);
           setBlockFor(null);
         }}
       />
@@ -227,6 +232,16 @@ export function MainScreen({ nav, tab, sheetOpen = false, forceEmpty = false }: 
           s.toggleFollow(unpickFor!.id);
           setUnpickFor(null);
         }}
+      />
+      <Dialog
+        open={Boolean(blockedDone)}
+        title={<><b>{blockedDone?.name}</b> 님을<br />차단하였습니다</>}
+        desc="설정에서 언제든지 차단을 해제할 수 있습니다"
+        cancel={null}
+        confirm="확인"
+        destructive={false}
+        onCancel={() => setBlockedDone(null)}
+        onConfirm={() => setBlockedDone(null)}
       />
       <ReportSheet
         author={reportFor}

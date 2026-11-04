@@ -4,7 +4,9 @@ import { NotificationScreen, PickRequestScreen } from './screens/Notice';
 import { EventDetailScreen, EventListScreen } from './screens/Event';
 import { SearchScreen } from './screens/Search';
 import { ChatScreen, MessagesScreen, PostDetailScreen, WriteScreen } from './screens/Post';
-import { OnboardingScreen, PickListScreen, ProfileScreen, SettingsScreen } from './screens/Profile';
+import { BlockedScreen, OnboardingScreen, PickListScreen, ProfileScreen, SettingsScreen } from './screens/Profile';
+import { LoginScreen } from './screens/Auth';
+import { ChallengeScreen, LiveVoteScreen } from './screens/Extra';
 import { AlgoScreen } from './screens/Algo';
 import { StoreProvider, useStore } from './data/store';
 
@@ -12,7 +14,8 @@ export type ScreenId =
   | 'main-pick' | 'main-recommend' | 'topic-sheet' | 'main-empty'
   | 'noti' | 'pick-requests' | 'events' | 'event-detail'
   | 'search' | 'vote' | 'post-detail' | 'write' | 'messages' | 'chat'
-  | 'profile' | 'pick-list' | 'settings' | 'onboarding' | 'algo';
+  | 'profile' | 'pick-list' | 'settings' | 'blocked' | 'onboarding' | 'login' | 'algo'
+  | 'challenge' | 'live-vote';
 
 /** 화면 이동. param = 게시물 id · 검색어 · 대화 상대 id */
 export type Nav = (id: ScreenId, param?: string) => void;
@@ -35,7 +38,11 @@ export const SCREENS: { id: ScreenId; code: string; label: string; group: string
   { id: 'profile', code: 'Profile 01-1', label: '마이프로필', group: '마이' },
   { id: 'pick-list', code: 'Profile 01-7', label: '취향콕 목록', group: '마이' },
   { id: 'settings', code: 'Setting', label: '설정', group: '마이' },
+  { id: 'blocked', code: 'Blocked', label: '차단 목록', group: '마이' },
+  { id: 'login', code: 'Login', label: '로그인 · 휴대폰 인증', group: '시작' },
   { id: 'onboarding', code: 'Onboarding', label: '취향 테스트', group: '시작' },
+  { id: 'challenge', code: '+6M', label: '챌린지 · 리워드', group: '6개월 후' },
+  { id: 'live-vote', code: '+6M', label: 'Live 투표', group: '6개월 후' },
   { id: 'algo', code: 'Algorithm', label: '알고리즘 확인', group: '개발 확인' },
 ];
 const GROUPS = [...new Set(SCREENS.map((s) => s.group))];
@@ -69,6 +76,9 @@ function Shell() {
     <div className="preview">
       <aside className="preview__index" aria-label="화면 목록">
         <p className="preview__brand">Twinsy 화면</p>
+        <p className="preview__source">
+          데이터: {{ mock: '예시 데이터', loading: '서버 불러오는 중', live: 'Supabase 서버', error: '서버 오류 · 예시 데이터' }[store.source]}
+        </p>
         <label className="preview__toggle" htmlFor="debug-toggle">
           <input id="debug-toggle" type="checkbox" checked={store.debug} onChange={(e) => store.setDebug(e.target.checked)} />
           알고리즘 점수 보기
@@ -110,7 +120,11 @@ function Shell() {
         {screen === 'profile' && <ProfileScreen nav={nav} />}
         {screen === 'pick-list' && <PickListScreen nav={nav} />}
         {screen === 'settings' && <SettingsScreen nav={nav} />}
+        {screen === 'blocked' && <BlockedScreen nav={nav} />}
+        {screen === 'login' && <LoginScreen nav={nav} />}
         {screen === 'onboarding' && <OnboardingScreen nav={nav} />}
+        {screen === 'challenge' && <ChallengeScreen nav={nav} />}
+        {screen === 'live-vote' && <LiveVoteScreen nav={nav} />}
         {screen === 'algo' && <AlgoScreen nav={nav} />}
       </div>
     </div>

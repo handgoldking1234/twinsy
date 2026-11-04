@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { followingFeed, realtimeTop5, recommendFeed, risingKeywords, trustMap } from '../algorithm';
 import { ME, NOW, POSTS, SEARCH_LOGS, TOP5_HISTORY, USERS } from './world';
 
-const trusts = trustMap(USERS, POSTS);
+const trusts = trustMap(USERS, POSTS, NOW);
 
 describe('예시 데이터에서 알고리즘 결과', () => {
   it('취향 반대 게시물을 반복한 계정: toolineAA_bob 경고 문구, deal_king99 노출 제한', () => {

@@ -23,6 +23,34 @@ export function ScoreChip({ v }: { v: PostView }) {
   );
 }
 
+/** Popovers_Soul — 소울 배지를 누르면 그 사람의 세부 취향을 보여 준다 */
+export function SoulButton({ v }: { v: PostView }) {
+  const { me } = useStore();
+  const [open, setOpen] = useState(false);
+  const topics = Object.keys(v.author.taste).filter((t) => me.taste[t]);
+  return (
+    <span className="soul-pop">
+      <button type="button" className="soul-pop__btn" aria-expanded={open} aria-label="취향 보기" onClick={() => setOpen((o) => !o)}>
+        <SoulBadge />
+      </button>
+      {open && (
+        <span className="soul-pop__bubble" role="dialog" onClick={() => setOpen(false)}>
+          {topics.map((t) => (
+            <span key={t} className="soul-pop__row">
+              <span className="soul-pop__topic">{t}</span>
+              <span className="soul-pop__chips">
+                {Object.entries(v.author.taste[t])
+                  .filter(([, x]) => Math.abs(x) >= 0.5)
+                  .map(([k, x]) => <span key={k}>{x > 0 ? k : `${k} X`}</span>)}
+              </span>
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function AuthorRow({ v, onMore }: { v: PostView; onMore?: () => void }) {
   return (
     <div className="post__author">
@@ -30,7 +58,7 @@ function AuthorRow({ v, onMore }: { v: PostView; onMore?: () => void }) {
       <div className="post__author-info">
         <div className="post__author-row">
           <strong className="post__name">{v.author.name}</strong>
-          {v.soul && <SoulBadge />}
+          {v.soul && <SoulButton v={v} />}
           {v.expertLabel && <ExpertBadge label={v.expertLabel} />}
         </div>
         <span className="post__time">{v.timeLabel}</span>

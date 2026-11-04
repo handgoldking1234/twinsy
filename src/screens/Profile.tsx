@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Dialog } from '../components/overlays';
-import { Avatar, BottomNav, Button, ExpertBadge, ImageBox, SoulBadge, SubHeader, Tabs, Toast } from '../components/ui';
+import { Avatar, BottomNav, BottomSheet, Button, ExpertBadge, ImageBox, SoulBadge, SubHeader, Tabs, Toast } from '../components/ui';
 import { similarity, TRUST_MESSAGE, type TasteVector } from '../algorithm';
 import { countLabel, useStore } from '../data/store';
 import { TASTE_TEST, userById, type AppPost } from '../data/world';
@@ -60,6 +60,7 @@ export function ProfileScreen({ nav }: { nav: Nav }) {
           <div className="profile-info__btns">
             <Button variant="smallOutline" onClick={() => nav('onboarding')}>취향 테스트 다시 하기</Button>
             <Button variant="smallOutline" onClick={() => nav('pick-list')}>취향콕 목록</Button>
+            <Button variant="smallOutline" onClick={() => nav('challenge')}>챌린지</Button>
           </div>
         </section>
 
@@ -212,9 +213,16 @@ export function PickListScreen({ nav }: { nav: Nav }) {
 export function SettingsScreen({ nav }: { nav: Nav }) {
   const s = useStore();
   const trust = s.trusts.get(s.me.id)!;
-  const [dialog, setDialog] = useState<null | 'private' | 'disable' | 'delete'>(null);
+  const [dialog, setDialog] = useState<null | 'private' | 'disable' | 'delete' | 'download' | 'expired'>(null);
+  const [inquiry, setInquiry] = useState(false);
+  const [inquiryText, setInquiryText] = useState('');
+  const [download, setDownload] = useState<'none' | 'requested' | 'expired'>('expired');
   const [isPrivate, setPrivate] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const flash = (m: string) => {
+    setToast(m);
+    window.setTimeout(() => setToast(null), 1800);
+  };
 
   const groups: { title: string; items: { label: string; onClick?: () => void; value?: string }[] }[] = [
     {
@@ -237,11 +245,25 @@ export function SettingsScreen({ nav }: { nav: Nav }) {
     },
     {
       title: '활동 내역',
-      items: [{ label: '꿀팁 평가' }, { label: '저장됨', onClick: () => nav('profile') }, { label: '차단 목록' }],
+      items: [
+        { label: '꿀팁 평가' },
+        { label: '저장됨', onClick: () => nav('profile') },
+        { label: '차단 목록', value: `${s.blocked.length}명`, onClick: () => nav('blocked') },
+        {
+          label: '내 데이터 다운로드',
+          value: download === 'requested' ? '준비 중' : download === 'expired' ? '기간 만료' : undefined,
+          onClick: () => setDialog(download === 'expired' ? 'expired' : 'download'),
+        },
+      ],
     },
     {
       title: '고객 지원',
-      items: [{ label: '문의' }, { label: '프로필 계정 비활성화', onClick: () => setDialog('disable') }, { label: '프로필 계정 삭제', onClick: () => setDialog('delete') }],
+      items: [
+        { label: '문의', onClick: () => setInquiry(true) },
+        { label: '로그아웃', onClick: () => nav('login') },
+        { label: '프로필 계정 비활성화', onClick: () => setDialog('disable') },
+        { label: '프로필 계정 삭제', onClick: () => setDialog('delete') },
+      ],
     },
   ];
 
@@ -301,6 +323,63 @@ export function SettingsScreen({ nav }: { nav: Nav }) {
         }}
       />
       <Dialog
+        open={dialog === 'expired'}
+        title="데이터 다운로드 기간 만료"
+        desc="해당 요청은 만료되었습니다. 데이터 다운로드를 새로 요청하세요"
+        cancel="다음에"
+        confirm="데이터 다운로드"
+        destructive={false}
+        onCancel={() => setDialog(null)}
+        onConfirm={() => {
+          setDownload('requested');
+          setDialog(null);
+          flash('데이터 다운로드를 요청했어요. 준비되면 알림으로 알려 드려요');
+        }}
+      />
+      <Dialog
+        open={dialog === 'download'}
+        title="내 데이터를 다운로드할까요?"
+        desc="게시물·댓글·취향 테스트 결과를 파일로 준비해 드려요. 링크는 7일간 유효해요"
+        confirm="요청하기"
+        destructive={false}
+        onCancel={() => setDialog(null)}
+        onConfirm={() => {
+          setDownload('requested');
+          setDialog(null);
+          flash('데이터 다운로드를 요청했어요');
+        }}
+      />
+      {/* BottomSheet_Settings_Suggestion */}
+      <BottomSheet open={inquiry} onClose={() => setInquiry(false)} title="문의">
+        <div className="sheet__content">
+          <p className="sheet__heading">계정 이용 제한 검토 요청</p>
+          <p className="sheet__sub sheet__sub--wrap">보내주신 내용은 트윈지 운영정책에 따라 검토 후 이메일로 답변드리겠습니다</p>
+          <textarea
+            id="inquiry-text"
+            className="textbox"
+            rows={8}
+            maxLength={1000}
+            placeholder="문의 내용을 작성해 주세요"
+            value={inquiryText}
+            onChange={(e) => setInquiryText(e.target.value)}
+          />
+        </div>
+        <div className="sheet__btns">
+          <Button variant="secondary" onClick={() => setInquiry(false)}>취소</Button>
+          <Button
+            variant="primary"
+            disabled={!inquiryText.trim()}
+            onClick={() => {
+              setInquiry(false);
+              setInquiryText('');
+              flash('문의를 보냈어요');
+            }}
+          >
+            보내기
+          </Button>
+        </div>
+      </BottomSheet>
+      <Dialog
         open={dialog === 'delete'}
         title="정말로 프로필 계정을 삭제하시겠습니까?"
         desc="삭제된 계정과 모든 데이터는 복구할 수 없습니다"
@@ -318,6 +397,8 @@ export function OnboardingScreen({ nav }: { nav: Nav }) {
   const s = useStore();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [quitWarn, setQuitWarn] = useState(false);
+  const [completed, setCompleted] = useState(false);
   const done = step >= TASTE_TEST.length;
   const q = TASTE_TEST[Math.min(step, TASTE_TEST.length - 1)];
 
@@ -359,13 +440,41 @@ export function OnboardingScreen({ nav }: { nav: Nav }) {
           <Button
             variant="primary"
             onClick={() => {
-              s.setMe({ ...s.me, taste: { ...s.me.taste, ...taste }, follows: [] });
-              nav('main-recommend');
+              if (!Object.keys(taste).length) return setQuitWarn(true);
+              setCompleted(true);
             }}
           >
             트윈지 시작하기
           </Button>
         </div>
+        {/* Layer_MyLikeTest_QuitWarning */}
+        <Dialog
+          open={quitWarn}
+          title="유사 취향 매칭을 시작하려면, 최소 한 가지 취향이 필요해요."
+          desc="음식이나 여행 중 관심 있는 걸로 하나만 골라 선택해주세요 :)"
+          cancel={null}
+          confirm="확인"
+          destructive={false}
+          onCancel={() => setQuitWarn(false)}
+          onConfirm={() => {
+            setQuitWarn(false);
+            setStep(0);
+          }}
+        />
+        {/* Layer_MyLikeTest_AddCompleted */}
+        <Dialog
+          open={completed}
+          title="취향 등록이 완료되었습니다. 감사합니다."
+          desc={<>나와 취향이 비슷한 멤버에게 부여되는<br /><SoulBadge /> 배지를 확인하세요.</>}
+          cancel={null}
+          confirm="확인"
+          destructive={false}
+          onCancel={() => setCompleted(false)}
+          onConfirm={() => {
+            s.setMe({ ...s.me, taste: { ...s.me.taste, ...taste }, follows: [] });
+            nav('main-recommend');
+          }}
+        />
       </div>
     );
   }
@@ -399,6 +508,51 @@ export function OnboardingScreen({ nav }: { nav: Nav }) {
           <p className="onboard__note">약 {Math.max(1, Math.round(((TASTE_TEST.length - step) * 25) / 60))}분 남았어요 · 최대 4분</p>
         </div>
       </main>
+    </div>
+  );
+}
+
+/** 차단 목록 — 차단 해제 다이얼로그 (Layer_Unblock) */
+export function BlockedScreen({ nav }: { nav: Nav }) {
+  const s = useStore();
+  const [target, setTarget] = useState<string | null>(null);
+  const u = target ? userById.get(target) : undefined;
+  return (
+    <div className="screen">
+      <SubHeader title="차단 목록" onBack={() => nav('settings')} />
+      <main className="screen__body">
+        {s.blocked.length === 0 ? (
+          <p className="empty-line">차단한 계정이 없어요</p>
+        ) : (
+          <ul className="profile-list">
+            {s.blocked.map((id) => {
+              const b = userById.get(id)!;
+              return (
+                <li key={id} className="profile-item">
+                  <Avatar size={40} src={b.avatar} />
+                  <div className="profile-item__info">
+                    <strong className="profile-item__name">{b.name}</strong>
+                  </div>
+                  <Button variant="smallOutline" onClick={() => setTarget(id)}>차단 해제</Button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </main>
+      <BottomNav active="profile" nav={nav} />
+      <Dialog
+        open={Boolean(target)}
+        title={<><b>{u?.name}</b> 님을<br />차단 해제하시겠습니까?</>}
+        desc="차단을 해제하면 서로의 게시물과 프로필 계정을 다시 볼 수 있으며 메시지도 다시 주고받을 수 있습니다"
+        confirm="차단 해제"
+        destructive={false}
+        onCancel={() => setTarget(null)}
+        onConfirm={() => {
+          s.unblock(target!);
+          setTarget(null);
+        }}
+      />
     </div>
   );
 }

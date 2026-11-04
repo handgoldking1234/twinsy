@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Icon } from '../components/Icon';
 import { PostCard } from '../components/PostCard';
-import { Avatar, BottomNav, Button, SubHeader, Toast } from '../components/ui';
+import { Avatar, BottomNav, BottomSheet, Button, SubHeader, Toast } from '../components/ui';
+import { Dialog } from '../components/overlays';
 import { contradictsAuthor } from '../algorithm';
 import { useStore } from '../data/store';
 import { TOPICS } from '../data/mock';
@@ -18,6 +19,12 @@ export function PostDetailScreen({ nav, postId }: { nav: Nav; postId?: string })
     { userId: 'ronnyoon', text: '정리 감사해요! 저장해 갑니다', time: '10분 전' },
     { userId: 'blues', text: '주말에 가 봐야겠네요', time: '32분 전' },
   ]);
+  const mine = post.authorId === s.me.id;
+  const isPrivate = s.privatePosts.includes(post.id);
+  const [sheet, setSheet] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   return (
     <div className="screen">
@@ -27,7 +34,8 @@ export function PostDetailScreen({ nav, postId }: { nav: Nav; postId?: string })
         right={<button type="button" className="sub-header__btn" aria-label="공유"><Icon name="share" /></button>}
       />
       <main className="screen__body">
-        <PostCard v={v} onTag={(t) => nav('search', t)} />
+        {mine && isPrivate && <p className="trust-banner">비공개 게시물이에요. 나만 볼 수 있어요</p>}
+        <PostCard v={v} onTag={(t) => nav('search', t)} onMore={mine ? () => setSheet(true) : undefined} />
         <section className="comments">
           <h2 className="list-subtitle">댓글 {post.metrics.comments + comments.length - 2}</h2>
           <ul className="comment-list">
@@ -58,6 +66,41 @@ export function PostDetailScreen({ nav, postId }: { nav: Nav; postId?: string })
         <input id="comment-input" className="composer__input" placeholder="댓글을 남겨 보세요" value={comment} onChange={(e) => setComment(e.target.value)} />
         <button type="submit" className="composer__send" disabled={!comment.trim()}>등록</button>
       </form>
+
+      {/* BottomSheet_Settings_MyPost_Open/Hidden_Option */}
+      <BottomSheet open={sheet} onClose={() => setSheet(false)}>
+        <ul className="action-list">
+          <li><button type="button" className="action-list__item" onClick={() => { setSheet(false); nav('write'); }}>수정</button></li>
+          <li>
+            <button type="button" className="action-list__item" onClick={() => { s.togglePrivate(post.id); setSheet(false); setToast(isPrivate ? '게시물을 공개했어요' : '게시물을 비공개로 돌렸어요'); window.setTimeout(() => setToast(null), 1600); }}>
+              {isPrivate ? '공개' : '비공개'}
+            </button>
+          </li>
+          <li><button type="button" className="action-list__item is-destructive" onClick={() => { setSheet(false); setConfirmDelete(true); }}>삭제</button></li>
+        </ul>
+      </BottomSheet>
+      <Dialog
+        open={confirmDelete}
+        title="이 게시물을 삭제하시겠어요?"
+        desc="삭제된 게시물은 삭제일 기준 15일간 보관되며, 이후에는 영구 삭제되어 복원할 수 없습니다."
+        confirm="삭제"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          setLoading('삭제 중...');
+          window.setTimeout(() => {
+            s.deletePost(post.id);
+            setLoading(null);
+            nav('profile');
+          }, 900);
+        }}
+      />
+      {loading && (
+        <div className="dim dim--center dim--light">
+          <div className="loading" role="status"><span className="loading__spin" />{loading}</div>
+        </div>
+      )}
+      {toast && <Toast>{toast}</Toast>}
     </div>
   );
 }

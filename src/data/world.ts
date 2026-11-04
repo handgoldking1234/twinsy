@@ -6,6 +6,8 @@ import type { AlgoPost, PostMetrics, SearchLog, UserProfile } from '../algorithm
 import { IMG, avatarAt } from './images';
 
 export const NOW = Date.parse('2026-11-04T21:00:00+09:00');
+/** 일 활성 사용자 수 (노출 단계 계산용 예시값) */
+export const DAU = 5_000;
 const H = 3_600_000;
 
 /* ---------------- 사용자 ---------------- */

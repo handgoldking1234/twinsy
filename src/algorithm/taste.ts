@@ -113,7 +113,13 @@ export type AccountTrust = {
   total: number;                    // 0에서 시작, 불일치 1건마다 -1
   byTopic: Record<Topic, number>;   // 주제별 신뢰도 (주제별로 따로 운영)
   level: TrustLevel;
+  /** -10에 도달한 시각부터 30일 뒤 (노출 제한 해제 시각) */
+  restrictedUntil?: number;
+  /** 한 달 제한이 끝나 풀린 상태 — 점수는 유지하고 '경고' 단계로 운영 */
+  lifted?: boolean;
 };
+
+export const RESTRICT_DAYS = 30;
 
 export function trustLevel(score: number): TrustLevel {
   if (score <= -10) return 'restricted'; // 한 달간 계정 전체 게시물 피드 노출 제한
@@ -129,22 +135,31 @@ export const TRUST_MESSAGE: Record<TrustLevel, string | null> = {
   restricted: '취향 불일치 게시물 누적으로 계정 전체 게시물의 피드와 팔로우한 사람의 피드 노출이 한 달간 제한됩니다.',
 };
 
-export function accountTrust(author: UserProfile, posts: AlgoPost[]): AccountTrust {
+/**
+ * 계정 신뢰도. now를 주면 -10 도달 시점부터 30일 제한 기간을 계산하고,
+ * 기간이 지나면 제한을 풀어 '경고' 단계로 되돌린다.
+ */
+export function accountTrust(author: UserProfile, posts: AlgoPost[], now?: number): AccountTrust {
   const byTopic: Record<Topic, number> = {};
   let total = 0;
-  for (const p of posts) {
-    if (p.authorId !== author.id) continue;
-    if (contradictsAuthor(p, author)) {
-      byTopic[p.topic] = (byTopic[p.topic] ?? 0) - 1;
-      total -= 1;
-    }
+  let restrictedAt: number | undefined;
+  const mine = posts.filter((p) => p.authorId === author.id).sort((a, b) => a.createdAt - b.createdAt);
+  for (const p of mine) {
+    if (!contradictsAuthor(p, author)) continue;
+    byTopic[p.topic] = (byTopic[p.topic] ?? 0) - 1;
+    total -= 1;
+    if (total <= -10 && restrictedAt === undefined) restrictedAt = p.createdAt;
   }
-  return { total, byTopic, level: trustLevel(total) };
+  const level = trustLevel(total);
+  if (restrictedAt === undefined) return { total, byTopic, level };
+  const restrictedUntil = restrictedAt + RESTRICT_DAYS * 86_400_000;
+  if (now !== undefined && now >= restrictedUntil) return { total, byTopic, level: 'warning', restrictedUntil, lifted: true };
+  return { total, byTopic, level, restrictedUntil };
 }
 
 /** 주제 신뢰도에 따른 노출 가중치: 0 → 1.0, -1 → 0.9 … -10 이하 → 0 (노출 제한) */
 export function trustMultiplier(trust: AccountTrust, topic: Topic): number {
   if (trust.level === 'restricted') return 0;
   const t = trust.byTopic[topic] ?? 0;
-  return Math.max(0, 1 + t * 0.1);
+  return Math.max(trust.lifted ? 0.3 : 0, 1 + t * 0.1);
 }

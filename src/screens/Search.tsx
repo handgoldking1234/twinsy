@@ -6,6 +6,8 @@ import { realtimeTop5, risingKeywords, topicSearch, type RankedPost } from '../a
 import { countLabel, useStore } from '../data/store';
 import { NOW, SEARCH_LOGS, TOP5_HISTORY, VOTES, postText, userById, type AppPost, type Vote } from '../data/world';
 import type { Nav } from '../App';
+import { logSearch } from '../data/repo';
+import { callFunction, isLive } from '../lib/supabase';
 
 type Tab = 'search' | 'vote';
 
@@ -22,7 +24,7 @@ export function SearchScreen({ nav, initialQuery = '', initialTab = 'search' }: 
         value={tab}
         onChange={setTab}
       />
-      <main className="screen__body">{tab === 'search' ? <SearchTab nav={nav} initialQuery={initialQuery} /> : <VoteTab />}</main>
+      <main className="screen__body">{tab === 'search' ? <SearchTab nav={nav} initialQuery={initialQuery} /> : <VoteTab nav={nav} />}</main>
       <BottomNav active="search" nav={nav} />
     </div>
   );
@@ -56,6 +58,7 @@ function SearchTab({ nav, initialQuery }: { nav: Nav; initialQuery: string }) {
   }, [query]);
 
   const run = (q: string) => {
+    void logSearch(s.me.id, q.trim());
     setFrozen(s.impressions);
     setInput(q);
     setQuery(q.trim());
@@ -130,7 +133,7 @@ function SearchTab({ nav, initialQuery }: { nav: Nav; initialQuery: string }) {
         </>
       ) : (
         <>
-          <AiSummary results={results} />
+          <AiSummary results={results} query={query} />
           <section className="section">
             <div className="section__head">
               <h2 className="section__title">검색 결과 {results.length}</h2>
@@ -155,13 +158,41 @@ function SearchTab({ nav, initialQuery }: { nav: Nav; initialQuery: string }) {
 }
 
 /** AI 검색 요약 — 전체 사용자 / 유사취향자 콘텐츠를 장점·단점·팁으로 구조화 (예시: 결과 게시물 데이터를 모아 요약) */
-function AiSummary({ results }: { results: RankedPost[] }) {
+function AiSummary({ results, query }: { results: RankedPost[]; query: string }) {
   const s = useStore();
   const [who, setWho] = useState<'all' | 'peer'>('all');
   const posts = results
     .filter((r) => who === 'all' || r.bucket === 'peer')
     .map((r) => s.posts.find((p) => p.id === r.post.id)!) as AppPost[];
+  const ids = posts.map((p) => p.id).join(',');
+  const [ai, setAi] = useState<AiResult | null>(null);
+  useEffect(() => {
+    setAi(null);
+    if (!isLive || !ids) return;
+    let alive = true;
+    callFunction<AiResult>('ai-summary', { query, postIds: ids.split(',') }).then((r) => alive && r && !('error' in r) && setAi(r));
+    return () => {
+      alive = false;
+    };
+  }, [query, ids]);
   if (!results.length) return null;
+  if (ai && posts.length) {
+    return (
+      <section className="ai-summary">
+        <div className="ai-summary__head">
+          <h2 className="ai-summary__title">AI 요약</h2>
+          <WhoToggle who={who} setWho={setWho} />
+        </div>
+        <dl className="ai-summary__list">
+          {ai.pros.length > 0 && (<><dt>장점</dt><dd>{ai.pros.join(', ')}</dd></>)}
+          {ai.cons.length > 0 && (<><dt>단점</dt><dd>{ai.cons.join(', ')}</dd></>)}
+          {ai.tips.length > 0 && (<><dt>팁</dt><dd>{ai.tips.join(' · ')}</dd></>)}
+          <dt>평가</dt>
+          <dd>{ai.verdict}</dd>
+        </dl>
+      </section>
+    );
+  }
   const uniq = (xs: string[]) => [...new Set(xs)].slice(0, 3);
   const pros = uniq(posts.flatMap((p) => p.pros ?? []));
   const cons = uniq(posts.flatMap((p) => p.cons ?? []));
@@ -172,12 +203,7 @@ function AiSummary({ results }: { results: RankedPost[] }) {
     <section className="ai-summary">
       <div className="ai-summary__head">
         <h2 className="ai-summary__title">AI 요약</h2>
-        <div className="seg">
-          <button type="button" className={`seg__item ${who === 'all' ? 'is-active' : ''}`} onClick={() => setWho('all')}>전체</button>
-          <button type="button" className={`seg__item ${who === 'peer' ? 'is-active' : ''}`} onClick={() => setWho('peer')}>
-            <SoulBadge /> 유사취향자
-          </button>
-        </div>
+        <WhoToggle who={who} setWho={setWho} />
       </div>
       {posts.length === 0 ? (
         <p className="ai-summary__empty">이 검색어에는 유사취향자 게시물이 아직 없어요</p>
@@ -194,9 +220,22 @@ function AiSummary({ results }: { results: RankedPost[] }) {
   );
 }
 
+type AiResult = { pros: string[]; cons: string[]; tips: string[]; verdict: string };
+
+function WhoToggle({ who, setWho }: { who: 'all' | 'peer'; setWho: (w: 'all' | 'peer') => void }) {
+  return (
+    <div className="seg">
+      <button type="button" className={`seg__item ${who === 'all' ? 'is-active' : ''}`} onClick={() => setWho('all')}>전체</button>
+      <button type="button" className={`seg__item ${who === 'peer' ? 'is-active' : ''}`} onClick={() => setWho('peer')}>
+        <SoulBadge /> 유사취향자
+      </button>
+    </div>
+  );
+}
+
 /* ================= 투표 ================= */
 
-function VoteTab() {
+function VoteTab({ nav }: { nav: Nav }) {
   const s = useStore();
   const [votes, setVotes] = useState<Vote[]>(VOTES);
   const [picked, setPicked] = useState<Record<string, string>>({});
@@ -208,6 +247,11 @@ function VoteTab() {
         <p>AI가 보기를 만들고, 다수의 의견을 모은 뒤 <b>유사취향자·전문가 의견을 따로</b> 보여 줘요.</p>
         <Button variant="small" onClick={() => setCreating(true)}>투표 만들기</Button>
       </div>
+      <button type="button" className="live-banner" onClick={() => nav('live-vote')}>
+        <span className="live__badge"><span className="live__dot" />LIVE</span>
+        <span className="live-banner__text">이번 주말 데이트, 어디가 제일 좋아요?</span>
+        <Icon name="arrowRight" size={14} />
+      </button>
       <ul className="vote-list">
         {votes.map((v) => {
           const author = userById.get(v.authorId)!;
@@ -300,6 +344,7 @@ export function suggestOptions(q: string): string[] {
 function CreateVoteSheet({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (q: string, opts: string[]) => void }) {
   const [q, setQ] = useState('');
   const [opts, setOpts] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
   return (
     <BottomSheet open={open} onClose={onClose} title="투표 만들기">
       <div className="sheet__content">
@@ -312,8 +357,17 @@ function CreateVoteSheet({ open, onClose, onCreate }: { open: boolean; onClose: 
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <Button variant="smallOutline" disabled={!q.trim()} onClick={() => setOpts(suggestOptions(q))}>
-          AI 보기 만들기
+        <Button
+          variant="smallOutline"
+          disabled={!q.trim() || busy}
+          onClick={async () => {
+            setBusy(true);
+            const r = await callFunction<{ options: string[] }>('ai-vote-options', { question: q });
+            setOpts(r?.options?.length ? r.options : suggestOptions(q));
+            setBusy(false);
+          }}
+        >
+          {busy ? '만드는 중...' : 'AI 보기 만들기'}
         </Button>
         {opts.length > 0 && (
           <ul className="vote__options">

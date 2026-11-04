@@ -135,3 +135,35 @@ describe('검색', () => {
     expect(res.map((r) => r.criteria).slice(0, 4)).toEqual(['C', 'C', 'C', 'D']);
   });
 });
+
+import { exposureStage, minExposure, sampleSize, underExposedBoostHours, accountTrust as trustAt } from './index';
+
+describe('노출 단계', () => {
+  it('최소 노출 수: 초기엔 유사취향자 전원, DAU 1,000 이상이면 7%', () => {
+    expect(minExposure(500, 40)).toBe(40);
+    expect(minExposure(10_000, 40)).toBe(700);
+  });
+  it('샘플 그룹은 DAU의 1% (30~300명)', () => {
+    expect(sampleSize(1_000)).toBe(30);
+    expect(sampleSize(10_000)).toBe(100);
+    expect(sampleSize(100_000)).toBe(300);
+  });
+  it('샘플 반응이 좋으면 전체로 확장, 나쁘면 유사취향자 안에서만', () => {
+    expect(exposureStage({ impressions: 50, engaged: 2 }, 10_000)).toBe('sample');
+    expect(exposureStage({ impressions: 200, engaged: 30 }, 10_000)).toBe('all');
+    expect(exposureStage({ impressions: 200, engaged: 6 }, 10_000)).toBe('peers');
+  });
+  it('최소 노출에 못 미치면 최신순에서 끌어올림', () => {
+    expect(underExposedBoostHours({ impressions: 0, engaged: 0 }, 10_000, 40)).toBe(6);
+    expect(underExposedBoostHours({ impressions: 700, engaged: 0 }, 10_000, 40)).toBe(0);
+  });
+  it('노출 제한은 -10 도달 후 30일이 지나면 풀린다', () => {
+    const a = user('a', { 매운맛: 0.9 });
+    const posts = Array.from({ length: 10 }, (_, i) => post(`c${i}`, 'a', 100 - i, { tasteTags: { 매운맛: -1 } }));
+    expect(trustAt(a, posts, NOW).level).toBe('restricted');
+    const later = NOW + 31 * 86_400_000;
+    const t = trustAt(a, posts, later);
+    expect(t.lifted).toBe(true);
+    expect(t.level).toBe('warning');
+  });
+});

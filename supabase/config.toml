@@ -1,0 +1,18 @@
+# supabase link --project-ref <ref> 로 실제 프로젝트에 연결
+project_id = "twinsy"
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+[functions.refresh-top5]
+verify_jwt = true
+
+[functions.recompute-peers]
+verify_jwt = true
+
+[functions.ai-summary]
+verify_jwt = true
+
+[functions.ai-vote-options]
+verify_jwt = true

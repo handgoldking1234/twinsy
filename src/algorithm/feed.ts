@@ -16,6 +16,7 @@
  */
 import { accountTrust, similarPeers, trustMultiplier, type AccountTrust } from './taste';
 import { reactionScores } from './ranking';
+import { exposureStage, underExposedBoostHours, type ExposureStats } from './exposure';
 import type { AlgoPost, FeedSource, RankedPost, Topic, UserProfile } from './types';
 
 const HOUR = 3_600_000;
@@ -29,9 +30,15 @@ export type FeedScope = { kind: 'all' } | { kind: 'interest'; topics: Topic[] };
 
 export const isColdStart = (me: UserProfile) => me.follows.length === 0;
 
-export function trustMap(users: UserProfile[], posts: AlgoPost[]): Map<string, AccountTrust> {
-  return new Map(users.map((u) => [u.id, accountTrust(u, posts)]));
+export function trustMap(users: UserProfile[], posts: AlgoPost[], now?: number): Map<string, AccountTrust> {
+  return new Map(users.map((u) => [u.id, accountTrust(u, posts, now)]));
 }
+
+/** 반응 지표로 노출 통계 추정 (실서비스에서는 노출 로그로 대체) */
+export const statsFromMetrics = (p: AlgoPost): ExposureStats => ({
+  impressions: p.metrics.views,
+  engaged: p.metrics.honey + p.metrics.comments + p.metrics.saves + p.metrics.shares,
+});
 
 /** 기간 창 — 최신순/트렌드순 × 일반/꿀단지 */
 export function inWindow(p: AlgoPost, sort: FeedSort, now: number): boolean {
@@ -63,10 +70,17 @@ export function recommendFeed(
   me: UserProfile,
   users: UserProfile[],
   posts: AlgoPost[],
-  opts: { scope: FeedScope; sort: FeedSort; now: number; trusts?: Map<string, AccountTrust> },
+  opts: {
+    scope: FeedScope;
+    sort: FeedSort;
+    now: number;
+    trusts?: Map<string, AccountTrust>;
+    /** 노출 단계 적용 — 일 활성 사용자 수와 게시물별 노출 통계 */
+    exposure?: { dau: number; stats?: (p: AlgoPost) => ExposureStats };
+  },
 ): RankedPost[] {
   const { scope, sort, now } = opts;
-  const trusts = opts.trusts ?? trustMap(users, posts);
+  const trusts = opts.trusts ?? trustMap(users, posts, now);
   const peerCache = new Map<Topic, Map<string, number>>();
   const peersOf = (topic: Topic) => {
     if (!peerCache.has(topic)) peerCache.set(topic, similarPeers(me, users, topic));
@@ -87,8 +101,12 @@ export function recommendFeed(
     return t ? trustMultiplier(t, p.topic) : 1;
   };
   // 최신순: 신뢰도 1점 감점마다 3시간 늦게 올린 것처럼 밀어냄 / 트렌드순: 반응 점수 × 신뢰도 가중치
+  const exp = opts.exposure;
+  const statsOf = exp?.stats ?? statsFromMetrics;
+  const boost = (p: AlgoPost) =>
+    exp ? underExposedBoostHours(statsOf(p), exp.dau, peersOf(p.topic).size || users.length) * HOUR : 0;
   const key = (p: AlgoPost) =>
-    sort === 'latest' ? p.createdAt - (1 - mult(p)) * 30 * HOUR : (reaction.get(p.id) ?? 0) * mult(p);
+    sort === 'latest' ? p.createdAt - (1 - mult(p)) * 30 * HOUR + boost(p) : (reaction.get(p.id) ?? 0) * mult(p);
 
   const peerPool: RankedPost[] = [];
   const allPool: RankedPost[] = [];
@@ -98,7 +116,11 @@ export function recommendFeed(
     const item: RankedPost = { post: p, score: key(p), criteria: sort, similarity: sim };
     // 내 취향 데이터가 없는 주제는 전체 회원 게시물로만
     if (sim !== undefined) peerPool.push({ ...item, source: 'peer' });
-    else allPool.push({ ...item, source: 'all' });
+    else {
+      // 샘플·유사취향자 단계 게시물은 아직 전체 회원 피드로 확장하지 않는다
+      if (exp && exposureStage(statsOf(p), exp.dau) !== 'all') continue;
+      allPool.push({ ...item, source: 'all' });
+    }
   }
   peerPool.sort((a, b) => b.score - a.score);
   allPool.sort((a, b) => b.score - a.score);
