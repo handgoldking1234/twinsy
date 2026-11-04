@@ -66,7 +66,7 @@ export function NotificationScreen({ nav }: { nav: Nav }) {
           <ul className="noti-list">{NOTI_TODAY.slice(2, 4).map((n, i) => row({ ...n, id: n.id + 'w', time: '3일' }, i + 2))}</ul>
         </section>
       </main>
-      <BottomNav onHome={() => nav('main-pick')} />
+      <BottomNav nav={nav} />
     </div>
   );
 }
@@ -108,7 +108,7 @@ export function PickRequestScreen({ nav }: { nav: Nav }) {
           ))}
         </ul>
       </main>
-      <BottomNav onHome={() => nav('main-pick')} />
+      <BottomNav nav={nav} />
     </div>
   );
 }

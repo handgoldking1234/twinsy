@@ -145,14 +145,14 @@ export function Tabs<T extends string>({
 }
 
 /* ---------- 하단 내비게이션 (DESIGN.md 4-6) ---------- */
-const NAV: { id: string; icon: IconName; label: string }[] = [
-  { id: 'home', icon: 'home', label: '홈' },
-  { id: 'search', icon: 'search', label: '검색' },
-  { id: 'write', icon: 'write', label: '작성' },
-  { id: 'message', icon: 'message', label: '메시지' },
-  { id: 'profile', icon: 'profile', label: '마이프로필' },
+const NAV: { id: string; icon: IconName; label: string; to: string }[] = [
+  { id: 'home', icon: 'home', label: '홈', to: 'main-pick' },
+  { id: 'search', icon: 'search', label: '검색', to: 'search' },
+  { id: 'write', icon: 'write', label: '작성', to: 'write' },
+  { id: 'message', icon: 'message', label: '메시지', to: 'messages' },
+  { id: 'profile', icon: 'profile', label: '마이프로필', to: 'profile' },
 ];
-export function BottomNav({ active = 'home', onHome }: { active?: string; onHome?: () => void }) {
+export function BottomNav({ active, nav }: { active?: string; nav: (to: never) => void }) {
   return (
     <nav className="bottom-nav" aria-label="하단 메뉴">
       {NAV.map((n) => (
@@ -162,7 +162,7 @@ export function BottomNav({ active = 'home', onHome }: { active?: string; onHome
           className={`bottom-nav__item ${active === n.id ? 'is-active' : ''}`}
           aria-label={n.label}
           aria-current={active === n.id ? 'page' : undefined}
-          onClick={n.id === 'home' ? onHome : undefined}
+          onClick={() => nav(n.to as never)}
         >
           <Icon name={n.icon} size={26} />
         </button>

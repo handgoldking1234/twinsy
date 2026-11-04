@@ -23,7 +23,7 @@ export function EventListScreen({ nav }: { nav: Nav }) {
           ))}
         </ul>
       </main>
-      <BottomNav onHome={() => nav('main-pick')} />
+      <BottomNav nav={nav} />
     </div>
   );
 }
@@ -51,7 +51,7 @@ export function EventDetailScreen({ nav }: { nav: Nav }) {
         </section>
         <ImageBox ratio="360 / 260" src={IMG.koreanTable} alt="취향이 비슷한 사람들과 나누는 한 상" className="event-detail__visual" />
       </main>
-      <BottomNav onHome={() => nav('main-pick')} />
+      <BottomNav nav={nav} />
     </div>
   );
 }
