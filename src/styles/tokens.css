@@ -1,0 +1,125 @@
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* =========================================================
+   Twinsy design tokens — DESIGN.md 1~3장 그대로.
+   규칙: 컴포넌트 CSS는 이 변수만 참조한다. 새 값은 DESIGN.md에 먼저 추가.
+   ========================================================= */
+:root {
+  /* 1-1 brand */
+  --color-brand-primary: #050505;
+  --color-brand-secondary: #A36502;
+  --color-brown600: #BE6307;
+  --color-point-primary: #FD0D19;
+  --color-brand-expert: #53991D;
+
+  /* 1-2 black scale */
+  --color-text-primary: #000000;
+  --color-black800: #242424;
+  --color-black600: #303030;
+  --color-black400: #373737;
+  --color-black300: #4A4A4A;
+  --color-black200: #B2B2B2;
+  --color-black100: #C6C6C6;
+
+  /* 1-3 text gray */
+  --color-text-gray800: #838383;
+  --color-text-secondary: #929292;
+  --color-text-disabled1: #CCCCCC;
+  --color-text-disabled2: #D6D6D6;
+  --color-sub-gray: #E3E3E3;
+
+  /* 1-4 bg / border */
+  --color-white: #FFFFFF;
+  --color-bg-gray200: #FAFAFA;
+  --color-bg-gray300: #F4F4F4;
+  --color-border-gray100: #F5F5F5;
+  --color-border-gray200: #EDEDED;
+  --color-border-gray300: #E8E8E8;
+  --color-border-gray600: #AAAAAA;
+  --color-bg-dim: rgba(0, 0, 0, 0.53);
+  --color-bg-toast: rgba(0, 0, 0, 0.70);
+
+  /* 4-4 badge (DESIGN.md 명시값) */
+  --color-badge-expert-bg: #F6F6F6;
+  --color-badge-expert-border: #F0F0F0;
+  --color-badge-soul-bg: rgba(255, 255, 255, 0.7);
+
+  /* 1-5 effect */
+  --shadow-layer: 0 1px 8px 0 rgba(0, 0, 0, 0.14);
+
+  /* 2 typography */
+  --font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", sans-serif;
+  --font-family-point: "Kaushan Script", cursive;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-lineheight-none: 1;
+  --font-lineheight-tight: 1.2;
+  --font-lineheight-130: 1.3;
+  --font-lineheight-140: 1.4;
+  --font-lineheight-normal: 1.5;
+
+  /* 3-4 spacing */
+  --spacing-xxs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* 3-2 gutters */
+  --gutter-content: 24px;   /* 게시물 텍스트·시트 콘텐츠·하단 버튼 */
+  --gutter-content-r: 20px;
+  --gutter-list: 18px;      /* 리스트·검색바·그리드·메뉴평가 박스 */
+  --gutter-setting: 20px;
+
+  /* 3-5 radius */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  --radius-btn: 6px;
+  --radius-dialog: 18px;
+
+  /* 3-1 frame */
+  --frame-width: 360px;
+  --header-h: 52px;
+  --bottom-nav-h: 58px;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; color-scheme: light; }
+
+body {
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background: var(--color-bg-gray300);
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+p, h1, h2, h3, ul, ol { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+img { display: block; max-width: 100%; }
