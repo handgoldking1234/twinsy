@@ -74,3 +74,6 @@ PC 화면에서는 왼쪽에 화면 목록과 **알고리즘 점수 보기** 스
 ## 교체 필요
 - 아이콘·로고: 대체 아이콘(`src/components/Icon.tsx`) → Figma 원본 SVG로 교체.
 - 예시 데이터(`src/data/world.ts`)는 Supabase 등 실제 데이터로 교체. 알고리즘 모듈은 그대로 재사용.
+
+## 이어서 작업하기
+결정사항·코드 지도·수정 방법은 [CLAUDE.md](CLAUDE.md), 전체 프로젝트 목록은 [IUX 프로젝트 목록](https://github.com/handgoldking1234/iux-app/blob/main/docs/PROJECTS.md)에 있습니다.
